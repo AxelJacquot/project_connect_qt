@@ -17,6 +17,7 @@
 #include <QMainWindow>
 
 #include <weather.h>
+#include <mqtthandler.h>
 
 class MainWindow : public QMainWindow
 {
@@ -63,6 +64,8 @@ private:
     QLabel *twodays = new QLabel("Two Days");
     QLabel *weatherTwoDays = new QLabel("Pluie intensive");
     QLabel *tempeartureTwoDays = new QLabel("26°C");
+
+    MqttHandler *server;
     Weather *m_weather;
 };
 #endif // MAINWINDOW_H

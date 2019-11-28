@@ -66,7 +66,9 @@ MainWindow::MainWindow(QWidget *parent)
     QWidget *widgetCentral = new QWidget();
     widgetCentral->setLayout(mainLayout);
 
-    m_weather = new Weather();
+    //m_weather = new Weather();
+
+    server = new MqttHandler();
 
     this->setCentralWidget(widgetCentral);
 }

@@ -36,7 +36,7 @@ signals:
                              QString wind);
 private:
     QString m_city = "Bordeaux";
-    QString m_id = QStringLiteral("5ffae0d3fb0c8b7c93062b05d3c8930f");
+    QString m_id = QStringLiteral("36496bad1955bf3365448965a42b9eac");
     QTimer delayWeather;
 
     QNetworkAccessManager *m_nam;

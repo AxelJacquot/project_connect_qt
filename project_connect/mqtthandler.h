@@ -9,7 +9,7 @@ class MqttHandler : public QObject
 {
     Q_OBJECT
 public:
-    MqttHandler(QString name, uint16_t port);
+    MqttHandler();
 
 public slots:
     void updateMessage(const QMqttMessage &msg);
@@ -18,8 +18,8 @@ public slots:
     void publishData(QString &topic, QJsonObject &jobject);
 
 private:
-    QString hostName;
-    uint16_t hostPort;
+    QString hostName = "192.168.1.50";
+    uint16_t hostPort = 1883;
     QMqttClient *client = new QMqttClient();
 };
 
