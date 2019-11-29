@@ -26,15 +26,16 @@ void MqttHandler::updateMessage(const QMqttMessage &message)
 
     QJsonDocument dataJSON = QJsonDocument::fromJson(message.payload());
     QJsonObject payload = dataJSON.object();
+
     QJsonObject tempObject;
 
     if(topic_origin == "server"){
         new_topic = "/gateway/" + topic_destination;
         if(topic_destination == "flame"){
             qDebug() << "Flame";
-            QString flame;
+            int flame = 0;
             if(payload.contains("data")){
-                flame = payload.value("data").toString();
+                flame = payload.value("data").toInt();
             }
             qDebug() << "Flame :" << flame;
         }
@@ -54,21 +55,28 @@ void MqttHandler::updateMessage(const QMqttMessage &message)
         if(topic_destination == "weather"){
 
             qDebug() << "Weather";
-            int humidityInt = 0, pressureInt = 0;
-            double tempDouble = 0;
+            int hum;
+            double tempDouble = 0, humidityDouble = 0, pressureDouble = 0;
             QString temp, humidity, pressure;
             if(payload.contains("temperature")){
                 tempDouble = payload.value("temperature").toDouble();
                 temp = QString::number(tempDouble);
             }
             if(payload.contains("humidity")){
-                humidityInt = payload.value("humidity").toInt();
-                humidity = QString::number(humidityInt);
+                hum = payload.value("humidity").toInt();
+                humidity = QString::number(hum);
             }
             if(payload.contains("pressure")){
-                pressureInt = payload.value("pressure").toInt();
-                pressure = QString::number(pressureInt);
+                pressureDouble = payload.value("pressure").toDouble();
+                pressure = QString::number(pressureDouble);
             }
+            QJsonObject graph;
+            int graphHum = hum/10;
+            graph["graph"] = graphHum;
+
+            QString topic = "/set/graph/";
+
+            publishData(topic, graph);
             qDebug() << "Temperature: " << temp;
             qDebug() << "Humidity: : " << humidity;
             qDebug() << "Preasure: : " << pressure;

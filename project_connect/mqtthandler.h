@@ -2,7 +2,10 @@
 #define MQTTHANDLER_H
 
 #include <QObject>
-#include "configuration_connect.h"
+#include <QMqttClient>
+#include <QMqttClient>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 
 class MqttHandler : public QObject
