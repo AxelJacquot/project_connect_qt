@@ -10,9 +10,13 @@ MqttHandler::MqttHandler()
     //client = createClientConfiguration(hostName, hostPort);
 }
 
+MqttHandler::~MqttHandler()
+{
+
+}
+
 void MqttHandler::updateMessage(const QMqttMessage &message)
 {
-    quint32 rc;
     QString topic = "/data";
     QJsonObject jobject;
 
@@ -37,42 +41,42 @@ void MqttHandler::updateMessage(const QMqttMessage &message)
             if(payload.contains("data")){
                 flame = payload.value("data").toInt();
             }
+            emit flameChanged(flame);
             qDebug() << "Flame :" << flame;
         }
         if(topic_destination == "air_quality"){
             qDebug() << "Air Quality";
-            QString data_co2, data_tvoc;
+            QString co2, tvoc;
             if(payload.contains("data_co2")){
-               data_co2 = payload.value("data_co2").toString();
+               co2 = payload.value("data_co2").toString();
             }
             if(payload.contains("data_tvoc")){
-                data_tvoc = payload.value("data_tvoc").toString();
+                tvoc = payload.value("data_tvoc").toString();
             }
-            qDebug() << "Co2: " << data_co2;
-            qDebug() << "Tvoc: " << data_tvoc;
+            qDebug() << "Co2: " << co2;
+            qDebug() << "Tvoc: " << tvoc;
+            emit airqualityChanged(co2, tvoc);
 
         }
-        if(topic_destination == "weather"){
+        if(topic_destination == "environment"){
 
-            qDebug() << "Weather";
-            int hum;
-            double tempDouble = 0, humidityDouble = 0, pressureDouble = 0;
+            qDebug() << "environment";
             QString temp, humidity, pressure;
             if(payload.contains("temperature")){
-                tempDouble = payload.value("temperature").toDouble();
-                temp = QString::number(tempDouble);
+                temp = QString::number(payload.value("temperature").toDouble());
             }
             if(payload.contains("humidity")){
-                hum = payload.value("humidity").toInt();
-                humidity = QString::number(hum);
+                humidity = QString::number(payload.value("humidity").toInt());
             }
             if(payload.contains("pressure")){
-                pressureDouble = payload.value("pressure").toDouble();
-                pressure = QString::number(pressureDouble);
+                pressure = QString::number(payload.value("pressure").toDouble());
             }
             QJsonObject graph;
-            int graphHum = hum/10;
-            graph["graph"] = graphHum;
+            int graphHum = humidity.toInt()/10;
+            QJsonValue jvalue;
+            jvalue = graphHum;
+            graph.insert("graph", jvalue);
+            //graph["graph"] = graphHum;
 
             QString topic = "/set/graph/";
 
@@ -80,6 +84,8 @@ void MqttHandler::updateMessage(const QMqttMessage &message)
             qDebug() << "Temperature: " << temp;
             qDebug() << "Humidity: : " << humidity;
             qDebug() << "Preasure: : " << pressure;
+
+            emit environmentChanged(temp, humidity, pressure);
         }
 
     }else{
@@ -94,7 +100,8 @@ void MqttHandler::onSubscribed(const QString &topic)
     topicFilter.setFilter(topic);
     QMqttSubscription *sub = client->subscribe(topicFilter, 0);
     if(sub){
-        connect(sub, &QMqttSubscription::messageReceived, this, &MqttHandler::updateMessage);
+        connect(sub, &QMqttSubscription::messageReceived,
+                this, &MqttHandler::updateMessage);
     }
 }
 

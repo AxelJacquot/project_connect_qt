@@ -20,24 +20,28 @@ class Weather : public QObject
 public:
     explicit Weather();
     QString niceTemperatureString(double temp);
+    QString correctwindspeed(double speed);
+
+    void citychanged(QString &city, QString &country);
 
 public slots:
     void networkSessionOpened(void);
     void updateWeather(void);
     void handleWeekNetworkData(void);
     void handleTodayNetworkData(void);
-    void citychanged(QString city);
 
     
 signals:
     void datachanged();
-    void otherDaysWeather(QString description, QString temperature, QString);
-    void todayWeatherChanged(QString description, QString temperature, QString humidity,
-                             QString wind);
+    void nowWeatherChanged(QString description, QString icon, QString temperature,
+                           QString humidity, QString windspeed);
+    void dayWeatherChanged(uint8_t countDay, QString description, QString icon, QString temp_max,
+                           QString temp_min, QString humidity, QString windSpeed);
 private:
     QString m_city = "Bordeaux";
+    QString m_country = "fr";
     QString m_id = QStringLiteral("36496bad1955bf3365448965a42b9eac");
-    QTimer delayWeather;
+    QTimer *delayWeather = new QTimer();
 
     QNetworkAccessManager *m_nam;
     QNetworkSession *m_ns;

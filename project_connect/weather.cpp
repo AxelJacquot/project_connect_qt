@@ -22,9 +22,17 @@ QString Weather::niceTemperatureString(double temp)
     return QString::number(qRound(temp-ZERO_KELVIN)) + QChar(0xB0);
 }
 
+QString Weather::correctwindspeed(double speed)
+{
+    return QString::number(speed * 3.6);
+}
+
 void Weather::networkSessionOpened()
 {
     qDebug() << "Connecté";
+    delayWeather->start(10000);
+    connect(delayWeather, &QTimer::timeout,
+            this, &Weather::updateWeather);
     updateWeather();
 }
 
@@ -33,9 +41,11 @@ void Weather::updateWeather()
     QUrl url("http://api.openweathermap.org/data/2.5/weather");
     QUrlQuery query;
 
-    query.addQueryItem("q", m_city);
+    query.addQueryItem("q", m_city + "," + m_country);
     query.addQueryItem("mode", "json");
     query.addQueryItem("APPID", m_id);
+    query.addQueryItem("lang", "fr");
+    query.addQueryItem("units", "metric");
     url.setQuery(query);
 
     m_repToday = m_nam->get(QNetworkRequest(url));
@@ -58,27 +68,28 @@ void Weather::handleTodayNetworkData()
             QJsonObject obj = document.object();
             QJsonObject tempObject;
             QString description;
+            QString icon;
             QString temperature;
             QString temp_min;
             QString temp_max;
-            int humiInt;
+
             QString humidity;
-            double windSpeedDouble;
             QString windSpeed;
 
             if(obj.contains(QStringLiteral("weather"))){
                 QJsonArray weatherArray  = obj.value(QStringLiteral("weather")).toArray();
                 tempObject = weatherArray.at(0).toObject();
                 description = tempObject.value(QStringLiteral("description")).toString();
+                icon = tempObject.value(QStringLiteral("icon")).toString();
                 qDebug() << description;
+                qDebug() << icon;
             }
             if(obj.contains(QStringLiteral("main"))){
                 tempObject = obj.value(QStringLiteral("main")).toObject();
-                temperature = niceTemperatureString(tempObject.value(QStringLiteral("temp")).toDouble());
-                humiInt = tempObject.value(QStringLiteral("humidity")).toInt();
-                humidity = QString::number(humiInt);
-                temp_min = niceTemperatureString(tempObject.value(QStringLiteral("temp_min")).toDouble());
-                temp_max = niceTemperatureString(tempObject.value(QStringLiteral("temp_max")).toDouble());
+                temperature = QString::number(tempObject.value(QStringLiteral("temp")).toDouble());
+                humidity = QString::number(tempObject.value(QStringLiteral("humidity")).toInt());
+                temp_min = QString::number(tempObject.value(QStringLiteral("temp_min")).toDouble());
+                temp_max = QString::number(tempObject.value(QStringLiteral("temp_max")).toDouble());
                 qDebug() << temperature;
                 qDebug() << humidity;
                 qDebug() << temp_min;
@@ -86,20 +97,23 @@ void Weather::handleTodayNetworkData()
             }
             if(obj.contains(QStringLiteral("wind"))){
                 tempObject = obj.value(QStringLiteral("wind")).toObject();
-                windSpeedDouble = tempObject.value(QStringLiteral("speed")).toDouble();
-                windSpeed = QString::number(windSpeedDouble);
+                windSpeed = correctwindspeed(tempObject.value(QStringLiteral("speed")).toDouble());
                 qDebug() << windSpeed;
             }
+
+            emit nowWeatherChanged(description, icon, temperature, humidity, windSpeed);
         }
     }
 
     QUrl url("http://api.openweathermap.org/data/2.5/forecast/daily");
     QUrlQuery query;
 
-    query.addQueryItem("q", m_city);
+    query.addQueryItem("q", m_city + "," + m_country);
     query.addQueryItem("mode", "json");
-    query.addQueryItem("cnt", "3");
+    query.addQueryItem("cnt", "5");
     query.addQueryItem("APPID", m_id);
+    query.addQueryItem("lang", "fr");
+    query.addQueryItem("units", "metric");
     url.setQuery(query);
 
     m_repToday->deleteLater();
@@ -119,60 +133,58 @@ void Weather::handleWeekNetworkData()
 
     if(!m_repDayly->error()){
         QJsonDocument document = QJsonDocument::fromJson(m_repDayly->readAll());
+
         if(document.isObject()){
             QJsonObject obj = document.object();
+            qDebug() << obj;
             if(obj.contains(QStringLiteral("list"))){
                 QJsonArray list = obj.value(QStringLiteral("list")).toArray();
-                for(uint8_t i = 1; i<list.count(); i++){
+                for(uint8_t i = 0; i<list.count(); i++){
                     QJsonObject tempObject;
                     QJsonObject listObj = list.at(i).toObject();
                     QString description;
+                    QString icon;
                     QString temperature;
                     QString temp_min;
                     QString temp_max;
-                    int humiInt;
                     QString humidity;
-                    double windSpeedDouble;
                     QString windSpeed;
 
                     if(listObj.contains(QStringLiteral("temp"))){
                         tempObject = listObj.value(QStringLiteral("temp")).toObject();
-                        temp_min = niceTemperatureString(tempObject.value(QStringLiteral("min")).toDouble());
-                        temp_max = niceTemperatureString(tempObject.value(QStringLiteral("max")).toDouble());
+                        temp_min = QString::number(tempObject.value(QStringLiteral("min")).toDouble());
+                        temp_max = QString::number(tempObject.value(QStringLiteral("max")).toDouble());
                         qDebug() << temp_min;
                         qDebug() << temp_max;
                     }
-                    humiInt = listObj.value(QStringLiteral("humidity")).toInt();
-                    humidity = QString::number(humiInt);
-
+                    humidity = QString::number(listObj.value(QStringLiteral("humidity")).toInt());
                     qDebug() << humidity;
 
                     if(listObj.contains(QStringLiteral("weather"))){
                         QJsonArray weatherArray  = listObj.value(QStringLiteral("weather")).toArray();
                         tempObject = weatherArray.at(0).toObject();
                         description = tempObject.value(QStringLiteral("description")).toString();
+                        icon = tempObject.value(QStringLiteral("icon")).toString();
                         qDebug() << description;
+                        qDebug() << icon;
                     }
-                    windSpeedDouble = listObj.value(QStringLiteral("speed")).toDouble();
-                    windSpeed = QString::number(windSpeedDouble);
+                    windSpeed = correctwindspeed(listObj.value(QStringLiteral("speed")).toDouble());
                     qDebug() << windSpeed;
 
+                    emit dayWeatherChanged(i, description, icon, temp_max, temp_min, humidity, windSpeed);
                 }
-
             }
-
         }
-
     }
     else
         qDebug() << m_repDayly->error();
 }
 
-
-
-void Weather::citychanged(QString city)
+void Weather::citychanged(QString &city, QString &country)
 {
     m_city = city;
+    m_country = country;
+    updateWeather();
 }
 
 
