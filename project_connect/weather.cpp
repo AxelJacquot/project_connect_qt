@@ -17,11 +17,6 @@ Weather::Weather()
     m_ns->open();
 }
 
-QString Weather::niceTemperatureString(double temp)
-{
-    return QString::number(qRound(temp-ZERO_KELVIN)) + QChar(0xB0);
-}
-
 QString Weather::correctwindspeed(double speed)
 {
     return QString::number(speed * 3.6);
